@@ -87,7 +87,6 @@ sample_questions = [
     "Where are some good bookstores on campus?",
     "Are there any art exhibitions on campus?",
     "Is there any theatre to watch on campus?",
-    "Who are some of the players on the UW madison basketball team?",
     "Are the northern lights visible from UW madison?"
 ]
 
