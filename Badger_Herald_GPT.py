@@ -79,6 +79,26 @@ def generate_response(query):
     response = st.session_state.conversation_chain({"question": query})
     return response['answer']
 
+# Add sample questions to the sidebar
+st.sidebar.header("Sample Questions")
+sample_questions = [
+    "How did UW madison do at their last basketball game?",
+    "How did UW madison do in the last football season?",
+    "Where are some good bookstores on campus?",
+    "Are there any art exhibitions on campus?",
+    "Is there any theatre to watch on campus?",
+    "Who are some of the players on the UW madison basketball team?",
+    "Are the northern lights visible from UW madison?"
+]
+
+st.sidebar.write("Try asking these questions:")
+for question in sample_questions:
+    if st.sidebar.button(question):
+        # When a sample question is clicked, use it as input
+        response = generate_response(question)
+        st.session_state.messages.append({"role": "user", "content": question})
+        st.session_state.messages.append({"role": "assistant", "content": response})
+
 # Create the chat interface using a form
 with st.form("my_form"):
     text = st.text_area('Enter your question:', '')
@@ -101,5 +121,3 @@ for message in st.session_state.messages:
 if st.button("Clear Chat"):
     st.session_state.conversation_chain = None
     st.session_state.messages = []
-
-
