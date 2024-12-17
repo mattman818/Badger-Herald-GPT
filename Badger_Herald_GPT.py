@@ -11,7 +11,7 @@ from langchain.chains import ConversationalRetrievalChain  # For creating conver
 from langchain_openai import OpenAIEmbeddings  # For creating text embeddings
 
 # Set up the web app title
-st.title("The Badger Herald GPT")
+st.title("The Badger GPT")
 
 # Get the OpenAI API key from Streamlit secrets
 openai_api_key = st.secrets["OPENAI_API_KEY"]
@@ -82,8 +82,8 @@ def generate_response(query):
 # Add sample questions to the sidebar
 st.sidebar.header("Sample Questions")
 sample_questions = [
-    "How did UW madison do at their last basketball game?",
-    "How did UW madison do in the last football season?",
+    "How is the UW madison womens volleyball team doing?",
+    "How is the badger basketball team doing?",
     "Where are some good bookstores on campus?",
     "Are there any art exhibitions on campus?",
     "Is there any theatre to watch on campus?",
