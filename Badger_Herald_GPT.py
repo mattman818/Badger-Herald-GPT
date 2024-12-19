@@ -19,33 +19,33 @@ openai_api_key = st.secrets["OPENAI_API_KEY"]
 # Define the path to the default text file
 DEFAULT_TEXT_PATH = "default.txt"
 
-# Initialize session state variables to persist data between reruns
+# Initialize session state
 if "conversation_chain" not in st.session_state:
     st.session_state.conversation_chain = None
 if "messages" not in st.session_state:
     st.session_state.messages = []
 if "vectorstore" not in st.session_state:
-    # Process the text file and create embeddings only once when the app starts
-    try:
-        # Read the default text file
-        with open(DEFAULT_TEXT_PATH, 'r') as file:
-            text = file.read()
-            # Configure text splitting parameters
-            text_splitter = CharacterTextSplitter(
-                separator="\n",
-                chunk_size=500,  # Size of each text chunk
-                chunk_overlap=100,  # Overlap between chunks to maintain context
-                length_function=len
-            )
-            # Split the text into chunks
-            chunks = text_splitter.split_text(text)
-            
-            # Create embeddings for the text chunks
-            embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
-            st.session_state.vectorstore = FAISS.from_texts(texts=chunks, embedding=embeddings)
-    except FileNotFoundError:
-        st.error(f"Default file {DEFAULT_TEXT_PATH} not found!")
-        st.stop()
+    st.session_state.vectorstore = None
+
+def initialize_vectorstore():
+    """Initialize vectorstore only when needed"""
+    if st.session_state.vectorstore is None:
+        try:
+            with open(DEFAULT_TEXT_PATH, 'r') as file:
+                text = file.read()
+                text_splitter = CharacterTextSplitter(
+                    separator="\n",
+                    chunk_size=500,
+                    chunk_overlap=100,
+                    length_function=len
+                )
+                chunks = text_splitter.split_text(text)
+                
+                embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
+                st.session_state.vectorstore = FAISS.from_texts(texts=chunks, embedding=embeddings)
+        except FileNotFoundError:
+            st.error(f"Default file {DEFAULT_TEXT_PATH} not found!")
+            st.stop()
 
 def generate_response(query):
     # Initialize the conversation chain if it doesn't exist
