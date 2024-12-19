@@ -52,33 +52,38 @@ def initialize_vectorstore():
             st.stop()
 
 def generate_response(query):
-    # Initialize vectorstore only when generating a response
-    initialize_vectorstore()
-    
-    if st.session_state.conversation_chain is None:
-        memory = ConversationBufferMemory(
-            memory_key='chat_history',
-            return_messages=True
-        )
+    try:
+        # Initialize vectorstore only on first use
+        if st.session_state.vectorstore is None:
+            initialize_vectorstore()
         
-        llm = ChatOpenAI(
-            model_name="gpt-3.5-turbo-16k",
-            temperature=0.7,
-            openai_api_key=openai_api_key
-        )
+        if st.session_state.conversation_chain is None:
+            memory = ConversationBufferMemory(
+                memory_key='chat_history',
+                return_messages=True
+            )
+            
+            llm = ChatOpenAI(
+                model_name="gpt-3.5-turbo-16k",
+                temperature=0.7,
+                openai_api_key=openai_api_key
+            )
+            
+            retriever = st.session_state.vectorstore.as_retriever(
+                search_kwargs={"k": 3}
+            )
+            
+            st.session_state.conversation_chain = ConversationalRetrievalChain.from_llm(
+                llm=llm,
+                retriever=retriever,
+                memory=memory
+            )
         
-        retriever = st.session_state.vectorstore.as_retriever(
-            search_kwargs={"k": 3}
-        )
-        
-        st.session_state.conversation_chain = ConversationalRetrievalChain.from_llm(
-            llm=llm,
-            retriever=retriever,
-            memory=memory
-        )
-    
-    response = st.session_state.conversation_chain({"question": query})
-    return response['answer']
+        response = st.session_state.conversation_chain({"question": query})
+        return response['answer']
+    except Exception as e:
+        st.error(f"An error occurred: {str(e)}")
+        return "I apologize, but I encountered an error processing your request. Please try again."
 
 def check_timeout():
     """Check if 5 minutes have passed since last activity"""
@@ -119,9 +124,4 @@ for message in st.session_state.messages:
 if st.button("Clear Chat"):
     st.session_state.conversation_chain = None
     st.session_state.messages = []
-
-# Add periodic timeout check
-if st.session_state.last_activity:
-    check_timeout()
-
 
