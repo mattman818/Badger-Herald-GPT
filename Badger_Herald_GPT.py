@@ -1,24 +1,22 @@
 #Badger Herald GPT
 
-import streamlit as st
-import langchain_community
-import langchain_openai
-from langchain_openai import ChatOpenAI, OpenAI
-from langchain.text_splitter import CharacterTextSplitter
-from langchain_community.document_loaders import TextLoader
-from langchain.memory import ConversationBufferMemory
-from langchain_community.vectorstores import FAISS
-from langchain.chains import ConversationalRetrievalChain
-from langchain_openai import OpenAIEmbeddings
-import time
-from datetime import datetime
+# Import necessary libraries
+import streamlit as st  # For creating the web interface
+from langchain_openai import ChatOpenAI, OpenAI  # OpenAI's chat models
+from langchain.text_splitter import CharacterTextSplitter  # For splitting text into chunks
+from langchain_community.document_loaders import TextLoader  # For loading text documents
+from langchain.memory import ConversationBufferMemory  # For maintaining conversation history
+from langchain_community.vectorstores import FAISS  # For vector storage and similarity search
+from langchain.chains import ConversationalRetrievalChain  # For creating conversation chains
+from langchain_openai import OpenAIEmbeddings  # For creating text embeddings
 
-st.title("The Badger Herald GPT")
+# Set up the web app title
+st.title("The Badger GPT")
 
-# Define your API key
+# Get the OpenAI API key from Streamlit secrets
 openai_api_key = st.secrets["OPENAI_API_KEY"]
 
-# Remove the file uploader and directly process your text file
+# Define the path to the default text file
 DEFAULT_TEXT_PATH = "default.txt"
 
 # Initialize session state
@@ -28,100 +26,101 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 if "vectorstore" not in st.session_state:
     st.session_state.vectorstore = None
-if "last_activity" not in st.session_state:
-    st.session_state.last_activity = None
 
 def initialize_vectorstore():
     """Initialize vectorstore only when needed"""
     if st.session_state.vectorstore is None:
-        try:
-            with open(DEFAULT_TEXT_PATH, 'r') as file:
-                text = file.read()
-                text_splitter = CharacterTextSplitter(
-                    separator="\n",
-                    chunk_size=500,
-                    chunk_overlap=100,
-                    length_function=len
-                )
-                chunks = text_splitter.split_text(text)
-                
-                embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
-                st.session_state.vectorstore = FAISS.from_texts(texts=chunks, embedding=embeddings)
-        except FileNotFoundError:
-            st.error(f"Default file {DEFAULT_TEXT_PATH} not found!")
-            st.stop()
+        with st.spinner("Loading knowledge base..."):  # Add loading indicator
+            try:
+                with open(DEFAULT_TEXT_PATH, 'r') as file:
+                    text = file.read()
+                    text_splitter = CharacterTextSplitter(
+                        separator="\n",
+                        chunk_size=500,
+                        chunk_overlap=100,
+                        length_function=len
+                    )
+                    chunks = text_splitter.split_text(text)
+                    
+                    embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
+                    st.session_state.vectorstore = FAISS.from_texts(texts=chunks, embedding=embeddings)
+            except FileNotFoundError:
+                st.error(f"Default file {DEFAULT_TEXT_PATH} not found!")
+                st.stop()
 
 def generate_response(query):
-    try:
-        # Initialize vectorstore only on first use
-        if st.session_state.vectorstore is None:
-            initialize_vectorstore()
+    # Initialize vectorstore only when generating a response
+    initialize_vectorstore()
+    
+    # Initialize the conversation chain if it doesn't exist
+    if st.session_state.conversation_chain is None:
+        # Set up conversation memory
+        memory = ConversationBufferMemory(
+            memory_key='chat_history',
+            return_messages=True
+        )
         
-        if st.session_state.conversation_chain is None:
-            memory = ConversationBufferMemory(
-                memory_key='chat_history',
-                return_messages=True
-            )
-            
-            llm = ChatOpenAI(
-                model_name="gpt-3.5-turbo-16k",
-                temperature=0.7,
-                openai_api_key=openai_api_key
-            )
-            
-            retriever = st.session_state.vectorstore.as_retriever(
-                search_kwargs={"k": 3}
-            )
-            
-            st.session_state.conversation_chain = ConversationalRetrievalChain.from_llm(
-                llm=llm,
-                retriever=retriever,
-                memory=memory
-            )
+        # Initialize the language model
+        llm = ChatOpenAI(
+            model_name="gpt-3.5-turbo-16k",
+            temperature=0.7,  # Controls randomness in responses
+            openai_api_key=openai_api_key
+        )
         
-        response = st.session_state.conversation_chain({"question": query})
-        return response['answer']
-    except Exception as e:
-        st.error(f"An error occurred: {str(e)}")
-        return "I apologize, but I encountered an error processing your request. Please try again."
+        # Set up the retriever with search parameters
+        retriever = st.session_state.vectorstore.as_retriever(
+            search_kwargs={"k": 3}  # Number of relevant chunks to retrieve
+        )
+        
+        # Create the conversation chain
+        st.session_state.conversation_chain = ConversationalRetrievalChain.from_llm(
+            llm=llm,
+            retriever=retriever,
+            memory=memory
+        )
+    
+    # Generate response using the conversation chain
+    response = st.session_state.conversation_chain({"question": query})
+    return response['answer']
 
-def check_timeout():
-    """Check if 5 minutes have passed since last activity"""
-    if st.session_state.last_activity:
-        inactive_time = time.time() - st.session_state.last_activity
-        if inactive_time > 300:  # 300 seconds = 5 minutes
-            # Reset everything
-            st.session_state.conversation_chain = None
-            st.session_state.vectorstore = None
-            st.session_state.messages = []
-            st.session_state.last_activity = None
-            return True
-    return False
+# Add sample questions to the sidebar
+st.sidebar.header("Sample Questions")
+sample_questions = [
+    "How is the UW madison womens volleyball team doing?",
+    "How is the badger basketball team doing?",
+    "Where are some good bookstores on campus?",
+    "Are there any art exhibitions on campus?",
+    "Is there any theatre to watch on campus?",
+    "Are the northern lights visible from UW madison?"
+]
 
-# Main chat interface
+st.sidebar.write("Try asking these questions:")
+for question in sample_questions:
+    if st.sidebar.button(question):
+        initialize_vectorstore()  # Only initialize when button is clicked
+        response = generate_response(question)
+        st.session_state.messages.append({"role": "user", "content": question})
+        st.session_state.messages.append({"role": "assistant", "content": response})
+
+# Create the chat interface using a form
 with st.form("my_form"):
     text = st.text_area('Enter your question:', '')
     submitted = st.form_submit_button("Submit")
     
-    if submitted:
-        # Check for timeout before processing
-        if check_timeout():
-            st.warning("Session timed out due to inactivity. Please start a new conversation.")
-            st.rerun()
-        
+    if submitted and text:  # Add text check to prevent empty submissions
+        initialize_vectorstore()  # Only initialize when form is submitted
         response = generate_response(text)
         st.session_state.messages.append({"role": "user", "content": text})
         st.session_state.messages.append({"role": "assistant", "content": response})
-        st.session_state.last_activity = time.time()  # Update last activity time
 
-# Display chat history
+# Display the chat history
 for message in st.session_state.messages:
     if message["role"] == "user":
         st.write("You:", message["content"])
     else:
         st.write("Assistant:", message["content"])
 
+# Add a button to clear the chat history
 if st.button("Clear Chat"):
     st.session_state.conversation_chain = None
     st.session_state.messages = []
-
