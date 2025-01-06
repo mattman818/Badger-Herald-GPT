@@ -83,7 +83,6 @@ def generate_response(query):
             llm=llm,
             retriever=retriever,
             memory=memory,
-            verbose=True,
             chain_type="stuff",
             return_source_documents=True,
             combine_docs_chain_kwargs={
