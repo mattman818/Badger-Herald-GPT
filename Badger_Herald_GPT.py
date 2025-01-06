@@ -9,6 +9,12 @@ from langchain.memory import ConversationBufferMemory  # For maintaining convers
 from langchain_community.vectorstores import FAISS  # For vector storage and similarity search
 from langchain.chains import ConversationalRetrievalChain  # For creating conversation chains
 from langchain_openai import OpenAIEmbeddings  # For creating text embeddings
+from langchain.prompts import (
+    ChatPromptTemplate,
+    SystemMessagePromptTemplate,
+    HumanMessagePromptTemplate,
+)
+
 
 # Set up the web app title
 st.title("The Badger GPT")
