@@ -63,7 +63,8 @@ def generate_response(query):
         # Set up conversation memory
         memory = ConversationBufferMemory(
             memory_key='chat_history',
-            return_messages=True
+            return_messages=True,
+            output_key='answer'
         )
         
         # Initialize the language model
