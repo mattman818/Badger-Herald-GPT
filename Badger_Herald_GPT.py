@@ -64,7 +64,7 @@ def generate_response(query):
         llm = ChatOpenAI(
             model_name="gpt-3.5-turbo-16k",
             temperature=0.7,  # Controls randomness in responses
-            openai_api_key=openai_api_key
+            openai_api_key=openai_api_key,
             system_message="If you don't have sufficient information, attempt to provide related insights instead of saying you can't answer."
         )
         
