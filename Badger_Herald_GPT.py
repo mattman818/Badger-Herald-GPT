@@ -64,8 +64,7 @@ def generate_response(query):
         llm = ChatOpenAI(
             model_name="gpt-3.5-turbo-16k",
             temperature=0.7,  # Controls randomness in responses
-            openai_api_key=openai_api_key,
-            system_message="If you don't have sufficient information, attempt to provide related insights instead of saying you can't answer."
+            openai_api_key=openai_api_key
         )
         
         # Set up the retriever with search parameters
@@ -73,12 +72,23 @@ def generate_response(query):
             search_kwargs={"k": 3}  # Number of relevant chunks to retrieve
         )
         
-        # Create the conversation chain
+        # Create the conversation chain with system message
         st.session_state.conversation_chain = ConversationalRetrievalChain.from_llm(
             llm=llm,
             retriever=retriever,
-            memory=memory
-        )
+            memory=memory,
+            verbose=True,
+            chain_type="stuff",
+            return_source_documents=True,
+            combine_docs_chain_kwargs={
+                "prompt": ChatPromptTemplate.from_messages([
+                    SystemMessagePromptTemplate.from_template(
+                        "If you don't have sufficient information, attempt to provide related insights instead of saying you can't answer. \n\nContext: {context}"
+                    ),
+                    HumanMessagePromptTemplate.from_template("{question}")
+                ])
+            })
+
     
     # Generate response using the conversation chain
     response = st.session_state.conversation_chain({"question": query})
