@@ -104,7 +104,7 @@ def generate_response(query):
 st.sidebar.header("Sample Questions")
 sample_questions = [
     "How is the UW madison womens volleyball team doing?",
-    "How is the badger basketball team doing?",
+    "How is the badger mens basketball team doing?",
     "Where are some good bookstores on campus?",
     "Are there any art exhibitions on campus?",
     "Is there any theatre to watch on campus?",
