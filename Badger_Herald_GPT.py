@@ -17,7 +17,9 @@ from langchain.prompts import (
 
 
 # Set up the web app title
-st.title("The Badger GPT")
+st.image("BuckyBadger.png", width=200)
+st.title("The Badger Herald GPT")
+st.subheader("The Badger GPT is an AI chatbot that answers questions about UW-Madison.  It uses retrieval-augmented generation (RAG) to find information from the Wisconsin Badger Herald and UW-Madison homepages.  It feeds these into OpenAI’s GPT-3.5-turbo model that generates a response based on the UW-Madison context and its general knowledge.  For questions outside its knowledge base, it uses GPT-3.5-turbo-16k's general knowledge and attempts to provide related insights when possible. Sample questions are available in the sidebar.")
 
 # Get the OpenAI API key from Streamlit secrets
 openai_api_key = st.secrets["OPENAI_API_KEY"]
